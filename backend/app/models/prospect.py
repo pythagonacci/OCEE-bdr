@@ -25,6 +25,6 @@ class Prospect(Base):
 
     # Relationships (filled in later by related models)
     decks = relationship("Deck", back_populates="prospect", cascade="all, delete-orphan")
-    sequences = relationship("EmailSequence", back_populates="prospect", cascade="all, delete-orphan")
+    emails = relationship("Email", back_populates="prospect", cascade="all, delete-orphan")
 
     
