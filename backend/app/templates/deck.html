@@ -4,11 +4,12 @@
   <meta charset="utf-8"/>
   <title>{{ deck_title }}</title>
   <style>
-    /* Full-bleed page: no margins; page background is beige */
+    /* Full-bleed page: no margins; page background is beige with a black border */
     @page {
       size: 9in 5.5in;           /* adjust as desired */
       margin: 0;                 /* remove printer-style margins */
       background: #F5F1E9;       /* OffDeal beige as the PAGE background */
+      border: 2px solid #111111; /* Black border around the entire page */
     }
 
     :root {
@@ -32,11 +33,10 @@
       box-sizing: border-box;
 
       width: 100%;
-      height: 5.5in; /* Set fixed height to match @page and fill the full slide */
-      padding: 16mm 18mm 20mm 18mm; /* extra bottom padding so footer doesn't overlap */
+      height: 5.5in; /* Match the @page height to fill the full slide */
+      padding: 16mm 18mm 20mm 18mm; /* Extra bottom padding to accommodate footer */
 
       background: transparent;
-      border: 2px solid #111111; /* Black border around the full slide */
       border-radius: 0;
     }
 
