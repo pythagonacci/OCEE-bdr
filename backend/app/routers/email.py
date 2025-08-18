@@ -72,6 +72,13 @@ def list_emails_for_prospect(prospect_id: int, db: Session = Depends(get_db)):
     rows = db.query(Email).filter(Email.prospect_id == prospect_id).order_by(Email.sequence_index.asc()).all()
     return EmailBatchOut(items=[_to_out(r) for r in rows])
 
+@router.get("/item/{email_id}", response_model=EmailOut, status_code=status.HTTP_200_OK)
+def get_email(email_id: int, db: Session = Depends(get_db)):
+    row = db.get(Email, email_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Email not found")
+    return _to_out(row)
+
 @router.patch("/item/{email_id}", response_model=EmailOut, status_code=status.HTTP_200_OK)
 def update_email(email_id: int, payload: EmailUpdate, db: Session = Depends(get_db)):
     row = db.get(Email, email_id)
