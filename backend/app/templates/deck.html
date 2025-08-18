@@ -6,8 +6,8 @@
   <style>
     /* Full-bleed page: no margins; page background is beige */
     @page {
-      size: 9in 5.5in;           /* adjust as desired, e.g., 10in 6in or 1920px 1080px */
-      margin: 0;                 /* remove white printer margins in the PDF */
+      size: 9in 5.5in;           /* adjust as desired */
+      margin: 0;                 /* remove printer-style margins */
       background: #F5F1E9;       /* OffDeal beige as the PAGE background */
     }
 
@@ -18,7 +18,6 @@
       --muted: #666666;
     }
 
-    /* Remove default HTML body margins and ensure background matches page */
     html, body {
       margin: 0;
       padding: 0;
@@ -27,19 +26,17 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
-    /* Each slide is a page worth of content with internal padding */
     .slide {
       page-break-after: always;
       position: relative;
       box-sizing: border-box;
 
-      /* Fill the available page box, then add inner padding for layout */
       width: 100%;
-      min-height: 100vh; /* WeasyPrint treats vh as page height; fine here */
-      padding: 16mm 18mm; /* Inner safe area; adjust to taste */
+      height: 5.5in; /* Set fixed height to match @page and fill the full slide */
+      padding: 16mm 18mm 20mm 18mm; /* extra bottom padding so footer doesn't overlap */
 
-      /* No card background/border so the beige page shows edge-to-edge */
       background: transparent;
+      border: 2px solid #111111; /* Black border around the full slide */
       border-radius: 0;
     }
 
@@ -48,10 +45,18 @@
     ul { margin: 8px 0 0 20px; padding: 0; }
     li { font-size: 14px; line-height: 1.5; margin: 6px 0; color: var(--off-black); }
 
+    /* Footer anchored to very bottom, left + right */
     .footer {
-      position: absolute; bottom: 10mm; left: 18mm; right: 18mm;
-      font-size: 11px; color: var(--muted);
-      display: flex; justify-content: space-between;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between; /* left and right alignment */
+      padding: 4mm 8mm;
+      box-sizing: border-box;
     }
 
     .logo-cover {
@@ -66,7 +71,6 @@
       opacity: 0.95;
     }
 
-    /* Slightly larger, visually centered cover title */
     .cover h1 { margin-top: 14mm; font-size: 36px; }
   </style>
 </head>
