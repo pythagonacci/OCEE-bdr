@@ -4,8 +4,12 @@
   <meta charset="utf-8"/>
   <title>{{ deck_title }}</title>
   <style>
-    /* Compact “deck-like” canvas: 9in × 5.5in */
-    @page { size: 9in 5.5in; margin: 8mm 10mm; }
+    /* Full-bleed page: no margins; page background is beige */
+    @page {
+      size: 9in 5.5in;           /* adjust as desired, e.g., 10in 6in or 1920px 1080px */
+      margin: 0;                 /* remove white printer margins in the PDF */
+      background: #F5F1E9;       /* OffDeal beige as the PAGE background */
+    }
 
     :root {
       --off-beige: #F5F1E9;
@@ -14,47 +18,56 @@
       --muted: #666666;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    /* Remove default HTML body margins and ensure background matches page */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--off-beige);
       color: var(--off-black);
-      background: var(--off-white);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
+    /* Each slide is a page worth of content with internal padding */
     .slide {
       page-break-after: always;
       position: relative;
-      height: 100%;
-      width: 100%;
-      padding: 10mm 12mm;
-      background: var(--off-beige);
-      border-radius: 6px;
       box-sizing: border-box;
+
+      /* Fill the available page box, then add inner padding for layout */
+      width: 100%;
+      min-height: 100vh; /* WeasyPrint treats vh as page height; fine here */
+      padding: 16mm 18mm; /* Inner safe area; adjust to taste */
+
+      /* No card background/border so the beige page shows edge-to-edge */
+      background: transparent;
+      border-radius: 0;
     }
 
     header { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    h1 { font-size: 32px; margin: 0 0 8px 0; letter-spacing: 0.2px; color: var(--off-black); }
-    ul { margin: 6px 0 0 18px; padding: 0; }
+    h1 { font-size: 32px; margin: 0 0 10px 0; letter-spacing: 0.2px; color: var(--off-black); }
+    ul { margin: 8px 0 0 20px; padding: 0; }
     li { font-size: 14px; line-height: 1.5; margin: 6px 0; color: var(--off-black); }
 
     .footer {
-      position: absolute; bottom: 8mm; left: 12mm; right: 12mm;
+      position: absolute; bottom: 10mm; left: 18mm; right: 18mm;
       font-size: 11px; color: var(--muted);
       display: flex; justify-content: space-between;
     }
 
     .logo-cover {
       position: absolute;
-      right: 12mm; top: 8mm;
-      width: 42mm;
+      right: 18mm; top: 10mm;
+      width: 44mm;
     }
     .logo-small {
       position: absolute;
-      right: 12mm; top: 8mm;
+      right: 18mm; top: 10mm;
       width: 22mm;
       opacity: 0.95;
     }
 
-    .cover h1 { margin-top: 12mm; font-size: 34px; }
+    /* Slightly larger, visually centered cover title */
+    .cover h1 { margin-top: 14mm; font-size: 36px; }
   </style>
 </head>
 <body>

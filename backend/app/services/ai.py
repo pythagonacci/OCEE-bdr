@@ -33,36 +33,56 @@ def _truncate(text: str, max_chars: int) -> str:
     text = (text or "").strip()
     return text if len(text) <= max_chars else (text[: max_chars - 1].rstrip() + "…")
 
-def _normalize_deck_obj(obj: Dict[str, Any]) -> tuple[list[dict], str]:
+def _coerce_bullets(value: Any) -> List[str]:
+    """
+    Accept bullets as list[str], str with delimiters, or anything else (-> []).
+    Splits on newlines/semicolon/dot/bullet chars, trims, de-dups empties.
+    """
+    if isinstance(value, list):
+        raw = [x for x in value if isinstance(x, str)]
+    elif isinstance(value, str):
+        import re
+        # Split on line breaks or common bullet separators
+        parts = re.split(r"[;\n•\-\u2022\u2023\u2043]+", value)
+        raw = [p.strip() for p in parts]
+    else:
+        raw = []
+
+    out: List[str] = []
+    for b in raw:
+        clean = _truncate(_strip_markup(b), settings.BULLET_MAX_CHARS)
+        if clean:
+            out.append(clean)
+    return out[: settings.MAX_BULLETS]
+
+def _normalize_deck_obj(obj: Dict[str, Any] | None) -> tuple[List[Dict[str, Any]], str]:
     """
     Coerce model output into an ordered slides array + title, padding any missing slides.
+    Tolerates malformed shapes, e.g. strings where dicts are expected.
     """
+    obj = obj or {}
     slides_out: List[Dict[str, Any]] = []
+
     for spec in SCHEMA:
-        key = spec["key"]
-        canonical = spec["title"]
-        node = (obj or {}).get(key) or {}
+        node = obj.get(spec["key"])
+        # Coerce non-dict nodes into expected shape
+        if isinstance(node, str):
+            node = {"title": node, "bullets": []}
+        elif not isinstance(node, dict) or node is None:
+            node = {}
 
-        # Title
-        title = _truncate(_strip_markup(node.get("title") or canonical), settings.TITLE_MAX_CHARS)
+        title_in = node.get("title")
+        bullets_in = node.get("bullets")
 
-        # Bullets
-        bullets_in = node.get("bullets") or []
-        if not isinstance(bullets_in, list):
-            bullets_in = []
-        clean: List[str] = []
-        for b in bullets_in:
-            if not isinstance(b, str):
-                continue
-            s = _truncate(_strip_markup(b), settings.BULLET_MAX_CHARS)
-            if s:
-                clean.append(s)
-        bullets = clean[: settings.MAX_BULLETS]
+        title = _truncate(_strip_markup(title_in or spec["title"]), settings.TITLE_MAX_CHARS)
+        bullets = _coerce_bullets(bullets_in)
 
         slides_out.append({"title": title, "bullets": bullets})
 
-    deck_title = (obj or {}).get("deck_title") or "OffDeal Pitch"
-    deck_title = _truncate(_strip_markup(deck_title), settings.TITLE_MAX_CHARS) or "OffDeal Pitch"
+    deck_title_raw = obj.get("deck_title")
+    if isinstance(deck_title_raw, (dict, list)):
+        deck_title_raw = ""
+    deck_title = _truncate(_strip_markup(deck_title_raw or "OffDeal Pitch"), settings.TITLE_MAX_CHARS) or "OffDeal Pitch"
     return slides_out, deck_title
 
 def _openai_json_response(prompt: str) -> Dict[str, Any] | List[Any]:
@@ -71,8 +91,11 @@ def _openai_json_response(prompt: str) -> Dict[str, Any] | List[Any]:
         logger.info("STUB_MODE=True: returning stubbed slides")
         return {
             "deck_title": "Your Business — Achieve a better sale with OffDeal",
-            "cover": {"title": "Cover", "bullets": []},
-            "market_opportunity": {"title": "Market Opportunity", "bullets": ["Industry tailwinds", "Consolidation", "Favorable rates"]},
+            "cover": "Cover",  # even if a string, normalizer will coerce correctly
+            "market_opportunity": {
+                "title": "Market Opportunity",
+                "bullets": "Industry tailwinds; Consolidation; Favorable rates"
+            },
             "why_offdeal": {"title": "Why OffDeal", "bullets": ["15× more buyers", "Offers <45 days", "~30% higher"]},
             "positioning": {"title": "Positioning for Maximum Value", "bullets": ["Recurring revenue", "Strong regional footprint"]},
             "process_next_steps": {"title": "Process & Next Steps", "bullets": ["NDA → CIM → Meetings → LOIs → Close"]},
@@ -117,7 +140,7 @@ def generate_deck_content(prospect: Dict[str, Any]) -> dict:
 
     prospect_json = json.dumps(prospect, ensure_ascii=False)
 
-    # Triple-quoted f-string: no escaping headaches
+    # Triple-quoted f-string for clarity
     prompt = f"""
 You are an expert pitch deck copywriter for OffDeal (AI-native investment bank for SMBs).
 Generate persuasive, personalized content for a 5-slide deck. Use Prospect Data where relevant,
