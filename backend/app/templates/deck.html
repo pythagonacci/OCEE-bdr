@@ -4,12 +4,11 @@
   <meta charset="utf-8"/>
   <title>{{ deck_title }}</title>
   <style>
-    /* Landscape A4 */
-    @page { size: A4 landscape; margin: 18mm 20mm 18mm 20mm; }
+    /* Compact “deck-like” canvas: 9in × 5.5in */
+    @page { size: 9in 5.5in; margin: 8mm 10mm; }
 
-    /* OffDeal palette */
     :root {
-      --off-beige: #F5F1E9;  /* soft off-white/beige */
+      --off-beige: #F5F1E9;
       --off-white: #FFFFFF;
       --off-black: #111111;
       --muted: #666666;
@@ -26,46 +25,45 @@
       position: relative;
       height: 100%;
       width: 100%;
-      padding: 12mm 14mm;
+      padding: 10mm 12mm;
       background: var(--off-beige);
       border-radius: 6px;
       box-sizing: border-box;
     }
 
     header { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    h1 { font-size: 28px; margin: 0 0 10px 0; letter-spacing: 0.2px; color: var(--off-black); }
-    ul { margin: 8px 0 0 18px; padding: 0; }
-    li { font-size: 13px; line-height: 1.45; margin: 6px 0; color: var(--off-black); }
+    h1 { font-size: 32px; margin: 0 0 8px 0; letter-spacing: 0.2px; color: var(--off-black); }
+    ul { margin: 6px 0 0 18px; padding: 0; }
+    li { font-size: 14px; line-height: 1.5; margin: 6px 0; color: var(--off-black); }
 
     .footer {
-      position: absolute; bottom: 10mm; left: 14mm; right: 14mm;
+      position: absolute; bottom: 8mm; left: 12mm; right: 12mm;
       font-size: 11px; color: var(--muted);
       display: flex; justify-content: space-between;
     }
 
-    /* Logo rules */
     .logo-cover {
       position: absolute;
-      right: 14mm; top: 10mm;
-      width: 46mm; /* large on first slide */
+      right: 12mm; top: 8mm;
+      width: 42mm;
     }
     .logo-small {
       position: absolute;
-      right: 14mm; top: 10mm;
-      width: 22mm; /* smaller on subsequent slides */
+      right: 12mm; top: 8mm;
+      width: 22mm;
       opacity: 0.95;
     }
+
+    .cover h1 { margin-top: 12mm; font-size: 34px; }
   </style>
 </head>
 <body>
 
   {% for s in slides %}
-    <div class="slide">
+    <div class="slide {% if loop.index0 == 0 %}cover{% endif %}">
       {% if loop.index0 == 0 %}
-        <!-- Cover: large logo -->
         <img class="logo-cover" src="static/images/offdeal_logo.png" alt="OffDeal Logo"/>
       {% else %}
-        <!-- Other slides: small corner logo -->
         <img class="logo-small" src="static/images/offdeal_logo.png" alt="OffDeal Logo"/>
       {% endif %}
 
@@ -79,7 +77,9 @@
           {% endfor %}
         </ul>
       {% else %}
-        <div style="color: var(--muted); font-size: 12px;">Content unavailable.</div>
+        {% if loop.index0 != 0 %}
+          <div style="color: var(--muted); font-size: 12px;">Content unavailable.</div>
+        {% endif %}
       {% endif %}
 
       <div class="footer">

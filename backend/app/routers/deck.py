@@ -1,14 +1,15 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
+from typing import List, Optional
 from ..database import get_db
 from ..models.prospect import Prospect
 from ..models.deck import Deck
 from ..schemas.deck import DeckOut, DeckUpdate
 from ..services.ai import generate_deck_content, AIUnavailableError, AIFormatError
 from ..services.pdf import render_deck_to_pdf, TemplateError, RenderError, FileIOError
-from ..services.slides import validate_and_normalize_slides
+from ..services.slides import validate_and_normalize_slides, _strip_markup, _truncate
 from ..config import settings
 
 router = APIRouter()
@@ -79,15 +80,12 @@ def update_deck(deck_id: int, payload: DeckUpdate, db: Session = Depends(get_db)
     if not d:
         raise HTTPException(status_code=404, detail="Deck not found")
 
-    # Normalize slides from payload
     try:
         normalized = validate_and_normalize_slides([s.dict() for s in payload.slides])
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Invalid slide structure: {e}")
 
-    # Optional title update
     if payload.title:
-        from ..services.slides import _truncate, _strip_markup  # reuse helpers
         title_clean = _truncate(_strip_markup(payload.title), settings.TITLE_MAX_CHARS)
         if title_clean:
             d.title = title_clean
@@ -115,7 +113,7 @@ def render_deck(deck_id: int, db: Session = Depends(get_db)):
     slides = json.loads(d.slides_json)
 
     try:
-        rel_path = render_deck_to_pdf(slides, d.title)  # e.g., "/generated/acme_x_offdeal.pdf"
+        rel_path = render_deck_to_pdf(slides, d.title)
     except (TemplateError, RenderError, FileIOError) as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -125,6 +123,56 @@ def render_deck(deck_id: int, db: Session = Depends(get_db)):
     db.refresh(d)
 
     pdf_url = settings.APP_BASE_URL.rstrip("/") + rel_path
+    return {
+        "id": d.id,
+        "prospect_id": d.prospect_id,
+        "title": d.title,
+        "slides": slides,
+        "pdf_url": pdf_url,
+    }
+
+# --------------------------
+# New slide-level endpoints
+# --------------------------
+
+class SlidePatch(BaseModel):
+    title: Optional[str] = None
+    bullets: Optional[List[str]] = None
+
+@router.get("/{deck_id}/slides/{index}", status_code=status.HTTP_200_OK)
+def get_slide(deck_id: int, index: int, db: Session = Depends(get_db)):
+    d = db.get(Deck, deck_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deck not found")
+    slides = json.loads(d.slides_json)
+    if index < 0 or index >= len(slides):
+        raise HTTPException(status_code=404, detail="Slide index out of range")
+    return slides[index]
+
+@router.patch("/{deck_id}/slides/{index}", status_code=status.HTTP_200_OK)
+def patch_slide(deck_id: int, index: int, patch: SlidePatch, db: Session = Depends(get_db)):
+    d = db.get(Deck, deck_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deck not found")
+
+    slides = json.loads(d.slides_json)
+    if index < 0 or index >= len(slides):
+        raise HTTPException(status_code=404, detail="Slide index out of range")
+
+    slide = slides[index]
+    if patch.title is not None:
+        slide["title"] = _truncate(_strip_markup(patch.title), settings.TITLE_MAX_CHARS) or slide.get("title") or "Untitled"
+    if patch.bullets is not None:
+        normalized = validate_and_normalize_slides([{"title": slide["title"], "bullets": patch.bullets}])[0]
+        slide.update(normalized)
+
+    slides[index] = slide
+    d.slides_json = json.dumps(slides, ensure_ascii=False)
+    db.add(d)
+    db.commit()
+    db.refresh(d)
+
+    pdf_url = settings.APP_BASE_URL.rstrip("/") + (d.pdf_path or "") if d.pdf_path else None
     return {
         "id": d.id,
         "prospect_id": d.prospect_id,

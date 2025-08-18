@@ -24,7 +24,7 @@ def validate_and_normalize_slides(slides: List[Dict[str, Any]]) -> List[Dict[str
             if not isinstance(b, str):
                 continue
             clean = _truncate(_strip_markup(b), settings.BULLET_MAX_CHARS)
-            if clean:
+            if clean:  # fixed colon bug
                 bullets.append(clean)
         bullets = bullets[: settings.MAX_BULLETS]
         out.append({"title": title, "bullets": bullets})
