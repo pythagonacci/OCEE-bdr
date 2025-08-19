@@ -1,7 +1,534 @@
-export default function Home() {
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { api } from "../lib/api";
+import type { Prospect, Deck, EmailBatch, EmailItem } from "../types";
+
+type DeckState = {
+  status: "idle" | "loading" | "ready";
+  deck?: Deck;
+  error?: string;
+};
+
+type EmailState = {
+  status: "idle" | "loading" | "ready";
+  batch?: EmailBatch;
+  selectedId?: number;
+  error?: string;
+};
+
+export default function Page() {
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
+  const [deckByProspect, setDeckByProspect] = useState<Record<number, DeckState>>({});
+  const [emailsByProspect, setEmailsByProspect] = useState<Record<number, EmailState>>({});
+  const [showModal, setShowModal] = useState(false);
+  const [rightPanelContent, setRightPanelContent] = useState<"deck" | "email" | null>(null);
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
+  const [sentEmails, setSentEmails] = useState<Set<number>>(new Set());
+
+  const [form, setForm] = useState<Partial<Prospect>>({
+    company_name: "",
+    contact_name: "",
+    email: "",
+    industry: "",
+    revenue_range: "",
+    location: "",
+    sale_motivation: "",
+    signals: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await api.listProspects();
+        setProspects(list);
+      } finally {
+        setLoadingList(false);
+      }
+    })();
+  }, []);
+
+  const selectedEmailFromState: EmailItem | undefined = useMemo(() => {
+    // find the currently selected email among any prospect
+    for (const p of prospects) {
+      const es = emailsByProspect[p.id];
+      if (es?.status === "ready" && es.selectedId) {
+        return es.batch!.items.find((i) => i.id === es.selectedId);
+      }
+    }
+    return undefined;
+  }, [emailsByProspect, prospects]);
+
+  async function handleCreateProspect() {
+    if (!form.company_name?.trim()) return;
+    const created = await api.createProspect({
+      company_name: form.company_name!.trim(),
+      contact_name: form.contact_name?.trim() || undefined,
+      email: form.email?.trim() || undefined,
+      industry: form.industry?.trim() || undefined,
+      revenue_range: form.revenue_range?.trim() || undefined,
+      location: form.location?.trim() || undefined,
+      sale_motivation: form.sale_motivation?.trim() || undefined,
+      signals: form.signals?.trim() || undefined,
+      notes: form.notes?.trim() || undefined,
+    });
+    setProspects((p) => [created, ...p]);
+    setShowModal(false);
+    setForm({ company_name: "" });
+  }
+
+  async function handleGenerateDeck(p: Prospect) {
+    setDeckByProspect((m) => ({ ...m, [p.id]: { status: "loading" } }));
+    try {
+      const deck = await api.generateDeck(p.id);
+      setDeckByProspect((m) => ({ ...m, [p.id]: { status: "ready", deck } }));
+    } catch (e: any) {
+      setDeckByProspect((m) => ({ ...m, [p.id]: { status: "idle", error: e?.message || "Failed" } }));
+      alert(`Deck generation failed: ${e?.message || ""}`);
+    }
+  }
+
+  async function handleRenderAndDownload(p: Prospect) {
+    const state = deckByProspect[p.id];
+    const deckId = state?.deck?.id;
+    if (!deckId) return;
+    const rendered = await api.renderDeck(deckId);
+    if (rendered.pdf_url) window.open(rendered.pdf_url, "_blank");
+    setDeckByProspect((m) => ({ ...m, [p.id]: { status: "ready", deck: rendered } }));
+  }
+
+  function handleOpenDeck(deck: Deck) {
+    setSelectedDeck(deck);
+    setSelectedEmail(null);
+    setRightPanelContent("deck");
+  }
+
+  function handleOpenEmail(email: EmailItem) {
+    setSelectedEmail(email);
+    setSelectedDeck(null);
+    setRightPanelContent("email");
+  }
+
+  function toggleEmailSent(emailId: number) {
+    setSentEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId);
+      } else {
+        newSet.add(emailId);
+      }
+      return newSet;
+    });
+  }
+
+  async function handleGenerateEmails(p: Prospect) {
+    setEmailsByProspect((m) => ({ ...m, [p.id]: { status: "loading" } }));
+    try {
+      const batch = await api.generateEmails(p.id);
+      setEmailsByProspect((m) => ({ ...m, [p.id]: { status: "ready", batch } }));
+    } catch (e: any) {
+      setEmailsByProspect((m) => ({ ...m, [p.id]: { status: "idle", error: e?.message || "Failed" } }));
+      alert(`Email generation failed: ${e?.message || ""}`);
+    }
+  }
+
+  function selectEmail(pId: number, emailId: number) {
+    setEmailsByProspect((m) => ({ ...m, [pId]: { ...(m[pId] || { status: "ready" }), ...m[pId], selectedId: emailId } }));
+  }
+
   return (
-    <div className="bg-blue-500 text-white p-4">
-      Welcome to OffDeal Client Engine
+    <main className="min-h-screen bg-neutral-50">
+      {/* Header */}
+      <div className="sticky top-0 z-10 border-b bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="font-bold text-xl">OffDeal</div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="ml-4 rounded-xl border px-3 py-1.5 text-sm bg-black text-white hover:opacity-90"
+            >
+              + Prospect
+            </button>
+          </div>
+          <div className="h-8 w-8 rounded-full bg-gray-300 grid place-items-center font-semibold text-sm">
+            OE
+          </div>
+        </div>
+      </div>
+
+      {/* Body: table + right pane */}
+      <div className="mx-auto max-w-7xl p-4 grid grid-cols-12 gap-4">
+        <div className="col-span-8">
+          <div className="overflow-hidden rounded-2xl border bg-white">
+            <div className="grid grid-cols-5 bg-neutral-100 text-xs font-semibold uppercase tracking-wide text-neutral-600">
+              <div className="p-3 col-span-1 min-w-0">Name</div>
+              <div className="p-3 col-span-1 min-w-0">Phone number</div>
+              <div className="p-3 col-span-1 min-w-0">Email</div>
+              <div className="p-3 col-span-1 min-w-0">Deck</div>
+              <div className="p-3 col-span-1 min-w-0">Email sequence</div>
+            </div>
+
+            {loadingList ? (
+              <div className="p-6 text-sm text-neutral-500">Loading prospects…</div>
+            ) : prospects.length === 0 ? (
+              <div className="p-6 text-sm text-neutral-500">No prospects yet. Add one to get started.</div>
+            ) : (
+              <ul>
+                {prospects.map((p) => {
+                  const deckState = deckByProspect[p.id] || { status: "idle" as const };
+                  const emailState = emailsByProspect[p.id] || { status: "idle" as const };
+
+                  return (
+                    <li key={p.id} className="grid grid-cols-5 border-t">
+                      <div className="p-3 col-span-1 min-w-0">
+                        <div className="font-medium truncate">{p.company_name}</div>
+                        {p.contact_name && <div className="text-xs text-neutral-500 truncate">{p.contact_name}</div>}
+                      </div>
+                      <div className="p-3 col-span-1 text-sm text-neutral-700 min-w-0 truncate">{(p as any).phone_number || "-"}</div>
+                      <div className="p-3 col-span-1 text-sm text-neutral-700 truncate" title={p.email || "-"}>{p.email || "-"}</div>
+
+                      {/* Deck column */}
+                      <div className="p-3 col-span-1 min-w-0">
+                        {deckState.status === "idle" && (
+                          <button
+                            onClick={() => handleGenerateDeck(p)}
+                            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                          >
+                            Generate
+                          </button>
+                        )}
+                        {deckState.status === "loading" && (
+                          <div className="text-sm text-neutral-500">Generating…</div>
+                        )}
+                        {deckState.status === "ready" && deckState.deck && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenDeck(deckState.deck!)}
+                              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                            >
+                              Open
+                            </button>
+                            <button
+                              onClick={() => handleOpenDeck(deckState.deck!)}
+                              className="rounded-lg border px-2 py-1.5 text-sm hover:bg-neutral-50"
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleRenderAndDownload(p)}
+                              className="rounded-lg border px-2 py-1.5 text-sm hover:bg-neutral-50"
+                              title="Download"
+                            >
+                              ⬇️
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Email sequence column */}
+                      <div className="p-3 col-span-1 min-w-0">
+                        {emailState.status === "idle" && (
+                          <button
+                            onClick={() => handleGenerateEmails(p)}
+                            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                          >
+                            Generate
+                          </button>
+                        )}
+                        {emailState.status === "loading" && (
+                          <div className="text-sm text-neutral-500">Generating…</div>
+                        )}
+                        {emailState.status === "ready" && emailState.batch && (
+                          <div className="flex flex-col gap-2 max-w-full">
+                            {emailState.batch.items
+                              .sort((a, b) => a.sequence_index - b.sequence_index)
+                              .map((item) => {
+                                const isSent = sentEmails.has(item.id);
+                                return (
+                                  <div key={item.id} className="flex items-center gap-2">
+                                                                         <button
+                                       onClick={() => handleOpenEmail(item)}
+                                       className="flex-1 text-left px-3 py-2 rounded-lg border hover:bg-neutral-50 text-sm truncate"
+                                       title={`Email ${item.sequence_index}: ${item.subject}`}
+                                     >
+                                       Email {item.sequence_index}
+                                     </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleEmailSent(item.id);
+                                      }}
+                                      className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs ${
+                                        isSent 
+                                          ? "bg-green-500 text-white border-green-500" 
+                                          : "bg-white text-gray-400 border-gray-300 hover:border-green-500"
+                                      }`}
+                                      title={isSent ? "Mark as unsent" : "Mark as sent"}
+                                    >
+                                      {isSent ? "✓" : "○"}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Right-side content panel */}
+        <div className="col-span-4">
+          <div className="rounded-2xl border bg-white p-5 h-[620px] overflow-auto">
+            {!rightPanelContent && (
+              <div className="text-sm text-neutral-500">Click on a deck or email to view and edit.</div>
+            )}
+            {rightPanelContent === "deck" && selectedDeck && (
+              <DeckEditor
+                deck={selectedDeck}
+                onSave={async (payload: { title?: string; slides: any[] }) => {
+                  try {
+                    const updated = await api.updateDeck(selectedDeck.id, payload);
+                    // Update the deck in state
+                    setDeckByProspect((m) => {
+                      const owner = Object.keys(m).find((pid) =>
+                        m[+pid]?.deck?.id === selectedDeck.id
+                      );
+                      if (!owner) return m;
+                      return { ...m, [+owner]: { ...m[+owner], deck: updated } };
+                    });
+                    // Update the selected deck
+                    setSelectedDeck(updated);
+                  } catch (e: any) {
+                    alert(`Failed to save deck: ${e?.message || "Unknown error"}`);
+                  }
+                }}
+              />
+            )}
+            {rightPanelContent === "email" && selectedEmail && (
+              <EmailEditor
+                email={selectedEmail}
+                onSave={async (payload) => {
+                  try {
+                    const updated = await api.updateEmail(selectedEmail.id, payload);
+                    // Update the email in state
+                    setEmailsByProspect((m) => {
+                      const owner = Object.keys(m).find((pid) =>
+                        m[+pid]?.batch?.items.some((i) => i.id === selectedEmail.id)
+                      );
+                      if (!owner) return m;
+                      const es = m[+owner];
+                      if (!es?.batch) return m;
+                      const items = es.batch.items.map((i) => (i.id === updated.id ? updated : i));
+                      return { ...m, [+owner]: { ...es, batch: { items } } };
+                    });
+                    // Update the selected email
+                    setSelectedEmail(updated);
+                  } catch (e: any) {
+                    alert(`Failed to save email: ${e?.message || "Unknown error"}`);
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Prospect modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-20 grid place-items-center bg-black/40 p-4" onClick={() => setShowModal(false)}>
+          <div
+            className="w-full max-w-2xl rounded-2xl border bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">New Prospect</h3>
+              <button onClick={() => setShowModal(false)} className="text-sm text-neutral-500">✕</button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                ["company_name", "Company name*"],
+                ["contact_name", "Contact name"],
+                ["email", "Email"],
+                ["industry", "Industry"],
+                ["revenue_range", "Revenue range"],
+                ["location", "Location"],
+                ["sale_motivation", "Sale motivation"],
+                ["signals", "Signals"],
+              ].map(([key, label]) => (
+                <label key={key} className="text-sm">
+                  <div className="mb-1 text-neutral-600">{label}</div>
+                  <input
+                    className="w-full rounded-lg border px-3 py-2"
+                    value={(form as any)[key] || ""}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  />
+                </label>
+              ))}
+              <label className="col-span-2 text-sm">
+                <div className="mb-1 text-neutral-600">Notes</div>
+                <textarea
+                  className="w-full rounded-lg border px-3 py-2"
+                  rows={3}
+                  value={form.notes || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setShowModal(false)} className="rounded-lg border px-3 py-2 text-sm">
+                Cancel
+              </button>
+              <button onClick={handleCreateProspect} className="rounded-lg bg-black px-3 py-2 text-sm text-white">
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+    </main>
+  );
+}
+
+function DeckEditor({
+  deck,
+  onSave,
+}: {
+  deck: Deck;
+  onSave: (payload: { title?: string; slides: any[] }) => Promise<void>;
+}) {
+  const [title, setTitle] = useState(deck.title);
+  const [slides, setSlides] = useState(deck.slides);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTitle(deck.title);
+    setSlides(deck.slides);
+  }, [deck.id]);
+
+  async function save() {
+    setSaving(true);
+    await onSave({ title, slides });
+    setSaving(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-neutral-600">Deck Title</label>
+        <input
+          className="w-full rounded-lg border px-3 py-2 text-base"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium text-neutral-600">Slides</label>
+        <div className="max-h-96 overflow-y-auto space-y-4">
+          {slides.map((slide, index) => (
+            <div key={index} className="border rounded-lg p-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-neutral-600">Slide {index + 1} Title</label>
+                <input
+                  className="w-full rounded-lg border px-3 py-2"
+                  value={slide.title}
+                  onChange={(e) => {
+                    const newSlides = [...slides];
+                    newSlides[index] = { ...slide, title: e.target.value };
+                    setSlides(newSlides);
+                  }}
+                />
+                <label className="text-sm font-medium text-neutral-600">Bullets</label>
+                <textarea
+                  className="w-full rounded-lg border px-3 py-2"
+                  rows={3}
+                  value={slide.bullets.join('\n')}
+                  onChange={(e) => {
+                    const newSlides = [...slides];
+                    newSlides[index] = { 
+                      ...slide, 
+                      bullets: e.target.value.split('\n').filter(bullet => bullet.trim())
+                    };
+                    setSlides(newSlides);
+                  }}
+                  placeholder="Enter bullets, one per line"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
     </div>
-  )
+  );
+}
+
+function EmailEditor({
+  email,
+  onSave,
+}: {
+  email: EmailItem;
+  onSave: (payload: { subject?: string; body?: string }) => Promise<void>;
+}) {
+  const [subject, setSubject] = useState(email.subject);
+  const [body, setBody] = useState(email.body);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSubject(email.subject);
+    setBody(email.body);
+  }, [email.id]);
+
+  async function save() {
+    setSaving(true);
+    await onSave({ subject, body });
+    setSaving(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="text-xs font-semibold uppercase text-neutral-500">Email {email.sequence_index}</div>
+      <input
+        className="w-full rounded-lg border px-3 py-2 text-base"
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+      />
+      <textarea
+        className="w-full rounded-lg border px-3 py-2 min-h-[380px]"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+      />
+      <div className="flex justify-end">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </div>
+  );
 }
