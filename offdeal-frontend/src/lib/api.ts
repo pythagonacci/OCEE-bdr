@@ -24,6 +24,15 @@ export const api = {
       })
     );
   },
+  async updateProspect(prospectId: number, payload: Partial<import("../types").Prospect>) {
+    return j<import("../types").Prospect>(
+      await fetch(`${BASE}/prospects/${prospectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+    );
+  },
 
   // Decks
   async generateDeck(prospectId: number) {

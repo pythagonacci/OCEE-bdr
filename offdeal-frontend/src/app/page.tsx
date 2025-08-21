@@ -23,6 +23,8 @@ export default function Page() {
   const [deckByProspect, setDeckByProspect] = useState<Record<number, DeckState>>({});
   const [emailsByProspect, setEmailsByProspect] = useState<Record<number, EmailState>>({});
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
   const [rightPanelContent, setRightPanelContent] = useState<"deck" | "email" | null>(null);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
@@ -81,6 +83,41 @@ export default function Page() {
     });
     setProspects((p) => [created, ...p]);
     setShowModal(false);
+    setForm({ company_name: "" });
+  }
+
+  function handleEditProspect(prospect: Prospect) {
+    setEditingProspect(prospect);
+    setForm({
+      company_name: prospect.company_name,
+      contact_name: prospect.contact_name || "",
+      email: prospect.email || "",
+      industry: prospect.industry || "",
+      revenue_range: prospect.revenue_range || "",
+      location: prospect.location || "",
+      sale_motivation: prospect.sale_motivation || "",
+      signals: prospect.signals || "",
+      notes: prospect.notes || "",
+    });
+    setShowEditModal(true);
+  }
+
+  async function handleUpdateProspect() {
+    if (!editingProspect || !form.company_name?.trim()) return;
+    const updated = await api.updateProspect(editingProspect.id, {
+      company_name: form.company_name!.trim(),
+      contact_name: form.contact_name?.trim() || undefined,
+      email: form.email?.trim() || undefined,
+      industry: form.industry?.trim() || undefined,
+      revenue_range: form.revenue_range?.trim() || undefined,
+      location: form.location?.trim() || undefined,
+      sale_motivation: form.sale_motivation?.trim() || undefined,
+      signals: form.signals?.trim() || undefined,
+      notes: form.notes?.trim() || undefined,
+    });
+    setProspects((p) => p.map(prospect => prospect.id === updated.id ? updated : prospect));
+    setShowEditModal(false);
+    setEditingProspect(null);
     setForm({ company_name: "" });
   }
 
@@ -228,8 +265,19 @@ export default function Page() {
                   return (
                     <li key={p.id} className="grid grid-cols-5 border-b border-gray-100">
                       <div className="p-4 col-span-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{p.company_name}</div>
-                        {p.contact_name && <div className="text-xs text-gray-500 truncate">{p.contact_name}</div>}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">{p.company_name}</div>
+                            {p.contact_name && <div className="text-xs text-gray-500 truncate">{p.contact_name}</div>}
+                          </div>
+                          <button
+                            onClick={() => handleEditProspect(p)}
+                            className="ml-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Edit prospect"
+                          >
+                            ⋯
+                          </button>
+                        </div>
                       </div>
                       <div className="p-4 col-span-1 text-sm text-gray-700 min-w-0 truncate">{(p as any).phone_number || "-"}</div>
                       <div className="p-4 col-span-1 text-sm text-gray-700 truncate" title={p.email || "-"}>{p.email || "-"}</div>
@@ -443,6 +491,61 @@ export default function Page() {
               </button>
               <button onClick={handleCreateProspect} className="btn-primary">
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Prospect modal */}
+      {showEditModal && editingProspect && (
+        <div className="fixed inset-0 z-20 grid place-items-center bg-black/40 p-4" onClick={() => setShowEditModal(false)}>
+          <div
+            className="w-full max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Prospect</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-sm text-gray-500 hover:text-gray-700">✕</button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                ["company_name", "Company name*"],
+                ["contact_name", "Contact name"],
+                ["email", "Email"],
+                ["industry", "Industry"],
+                ["revenue_range", "Revenue range"],
+                ["location", "Location"],
+                ["sale_motivation", "Sale motivation"],
+                ["signals", "Signals"],
+              ].map(([key, label]) => (
+                <label key={key} className="text-sm">
+                  <div className="mb-2 text-gray-600 font-medium">{label}</div>
+                  <input
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f5f5dc] focus:border-transparent"
+                    value={(form as any)[key] || ""}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  />
+                </label>
+              ))}
+              <label className="col-span-2 text-sm">
+                <div className="mb-2 text-gray-600 font-medium">Notes</div>
+                <textarea
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f5f5dc] focus:border-transparent"
+                  rows={3}
+                  value={form.notes || ""}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowEditModal(false)} className="btn-secondary">
+                Cancel
+              </button>
+              <button onClick={handleUpdateProspect} className="btn-primary">
+                Update
               </button>
             </div>
           </div>

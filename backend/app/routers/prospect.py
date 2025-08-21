@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from .. import models
-from ..schemas.prospect import ProspectCreate, ProspectOut
+from ..schemas.prospect import ProspectCreate, ProspectOut, ProspectUpdate
 
 router = APIRouter()
 
@@ -34,4 +34,34 @@ def get_prospect(prospect_id: int, db: Session = Depends(get_db)):
     p = db.query(models.Prospect).get(prospect_id)
     if not p:
         raise HTTPException(status_code=404, detail="Prospect not found")
+    return p
+
+@router.patch("/{prospect_id}", response_model=ProspectOut)
+def update_prospect(prospect_id: int, payload: ProspectUpdate, db: Session = Depends(get_db)):
+    p = db.query(models.Prospect).get(prospect_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+    
+    # Update fields if provided
+    if payload.company_name is not None:
+        p.company_name = payload.company_name.strip()
+    if payload.contact_name is not None:
+        p.contact_name = payload.contact_name
+    if payload.email is not None:
+        p.email = str(payload.email) if payload.email else None
+    if payload.industry is not None:
+        p.industry = payload.industry
+    if payload.revenue_range is not None:
+        p.revenue_range = payload.revenue_range
+    if payload.location is not None:
+        p.location = payload.location
+    if payload.sale_motivation is not None:
+        p.sale_motivation = payload.sale_motivation
+    if payload.signals is not None:
+        p.signals = payload.signals
+    if payload.notes is not None:
+        p.notes = payload.notes
+    
+    db.commit()
+    db.refresh(p)
     return p

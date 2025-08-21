@@ -17,6 +17,7 @@
       --off-white: #FFFFFF;
       --off-black: #111111;
       --muted: #666666;
+      --dashboard-beige: #fcfbfa;
     }
 
     html, body {
@@ -40,10 +41,48 @@
       border-radius: 0;
     }
 
-    header { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    h1 { font-size: 32px; margin: 0 0 10px 0; letter-spacing: 0.2px; color: var(--off-black); }
-    ul { margin: 8px 0 0 20px; padding: 0; }
-    li { font-size: 14px; line-height: 1.5; margin: 6px 0; color: var(--off-black); }
+    header { 
+      font-size: 12px; 
+      color: var(--muted); 
+      margin-bottom: 6px; 
+    }
+    
+    h1 { 
+      font-size: 32px; 
+      margin: 0 0 10px 0; 
+      letter-spacing: 0.2px; 
+      color: var(--off-black); 
+    }
+    
+    /* Separator line between header and content */
+    .separator {
+      height: 1px;
+      background: var(--muted);
+      margin: 8px 0 16px 0;
+      opacity: 0.3;
+    }
+    
+    /* Content container with rounded rectangle */
+    .content-container {
+      background: var(--dashboard-beige);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 8px auto 0 auto;
+      max-width: 92%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    ul { 
+      margin: 8px 0 0 20px; 
+      padding: 0; 
+    }
+    
+    li { 
+      font-size: 14px; 
+      line-height: 1.5; 
+      margin: 6px 0; 
+      color: var(--off-black); 
+    }
 
     /* Footer anchored to very bottom, left + right */
     .footer {
@@ -84,18 +123,24 @@
         <img class="logo-small" src="static/images/offdeal_logo.png" alt="OffDeal Logo"/>
       {% endif %}
 
-      <header>{{ deck_title }}</header>
       <h1>{{ s.title }}</h1>
+      
+      <!-- Separator line -->
+      <div class="separator"></div>
 
       {% if s.bullets and s.bullets|length > 0 %}
-        <ul>
-          {% for b in s.bullets %}
-            <li>{{ b }}</li>
-          {% endfor %}
-        </ul>
+        <div class="content-container">
+          <ul>
+            {% for b in s.bullets %}
+              <li>{{ b }}</li>
+            {% endfor %}
+          </ul>
+        </div>
       {% else %}
         {% if loop.index0 != 0 %}
-          <div style="color: var(--muted); font-size: 12px;">Content unavailable.</div>
+          <div class="content-container">
+            <div style="color: var(--muted); font-size: 12px;">Content unavailable.</div>
+          </div>
         {% endif %}
       {% endif %}
 
