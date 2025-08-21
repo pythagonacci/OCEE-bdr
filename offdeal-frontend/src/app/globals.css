@@ -3,8 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary: #f5f5dc;
-  --primary-hover: #e8e8d0;
+  --primary: #ebe5df;
+  --primary-hover: #e0d9d2;
   --border: #e5e7eb;
   --border-hover: #d1d5db;
   --text-primary: #111827;
@@ -91,7 +91,7 @@ body {
 
 /* Button styles */
 .btn-primary {
-  background-color: #f5f5dc;
+  background-color: #ebe5df;
   color: #374151;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -103,7 +103,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: #e8e8d0;
+  background-color: #e0d9d2;
 }
 
 .btn-secondary {

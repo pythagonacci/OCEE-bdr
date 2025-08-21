@@ -182,19 +182,12 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-[#fcfbfa]">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/offdeal_logo.png" alt="OffDeal" className="h-8 w-auto" />
-            <div className="font-semibold text-xl text-gray-900">OffDeal</div>
-            <button
-              onClick={() => setShowModal(true)}
-              className="ml-6 rounded-lg bg-[#f5f5dc] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#e8e8d0] transition-colors border border-gray-300"
-            >
-              + Prospect
-            </button>
+            <img src="/offdeal_logo.png" alt="OffDeal" className="h-16 w-auto" />
           </div>
           <div className="h-8 w-8 rounded-full bg-gray-300 grid place-items-center font-semibold text-sm text-gray-700">
             OE
@@ -205,8 +198,16 @@ export default function Page() {
       {/* Body: table + right pane */}
       <div className="mx-auto max-w-7xl px-6 pb-6 grid grid-cols-12 gap-6 mt-8">
         <div className="col-span-8">
+          <div className="mb-4">
+            <button
+              onClick={() => setShowModal(true)}
+              className="rounded-lg bg-[#ebe5df] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#e0d9d2] transition-colors border border-gray-300"
+            >
+              + Prospect
+            </button>
+          </div>
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="grid grid-cols-5 bg-[#f5f5dc] text-xs font-semibold uppercase tracking-wide text-gray-600 border-b border-gray-200">
+            <div className="grid grid-cols-5 bg-[#ebe5df] text-xs font-semibold uppercase tracking-wide text-gray-600 border-b border-gray-200">
               <div className="p-4 col-span-1 min-w-0">Name</div>
               <div className="p-4 col-span-1 min-w-0">Phone number</div>
               <div className="p-4 col-span-1 min-w-0">Email</div>
@@ -225,7 +226,7 @@ export default function Page() {
                   const emailState = emailsByProspect[p.id] || { status: "idle" as const };
 
                   return (
-                    <li key={p.id} className="grid grid-cols-5 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <li key={p.id} className="grid grid-cols-5 border-b border-gray-100">
                       <div className="p-4 col-span-1 min-w-0">
                         <div className="font-medium text-gray-900 truncate">{p.company_name}</div>
                         {p.contact_name && <div className="text-xs text-gray-500 truncate">{p.contact_name}</div>}
