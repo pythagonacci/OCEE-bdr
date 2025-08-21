@@ -26,9 +26,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "*"  # CSV list or "*" for all (tighten later)
 
     # Content limits (kept here so services/pdf/template can read the same values)
-    TITLE_MAX_CHARS: int = 90
-    BULLET_MAX_CHARS: int = 120
-    MAX_BULLETS: int = 6
+    TITLE_MAX_CHARS: int = 200
+    BULLET_MAX_CHARS: int = 500
+    MAX_BULLETS: int = 8
 
     class Config:
         env_file = ".env"

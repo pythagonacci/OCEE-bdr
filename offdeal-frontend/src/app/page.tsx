@@ -27,6 +27,10 @@ export default function Page() {
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<EmailItem | null>(null);
   const [sentEmails, setSentEmails] = useState<Set<number>>(new Set());
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfViewMode, setPdfViewMode] = useState<"modal" | "split">("modal");
+  const [currentPdfDeckId, setCurrentPdfDeckId] = useState<number | null>(null);
 
   const [form, setForm] = useState<Partial<Prospect>>({
     company_name: "",
@@ -95,9 +99,47 @@ export default function Page() {
     const state = deckByProspect[p.id];
     const deckId = state?.deck?.id;
     if (!deckId) return;
-    const rendered = await api.renderDeck(deckId);
-    if (rendered.pdf_url) window.open(rendered.pdf_url, "_blank");
-    setDeckByProspect((m) => ({ ...m, [p.id]: { status: "ready", deck: rendered } }));
+    
+    try {
+      const rendered = await api.renderDeck(deckId);
+      if (rendered.pdf_url) {
+        // Add cache-busting parameter to ensure fresh PDF
+        const cacheBustedUrl = `${rendered.pdf_url}?t=${Date.now()}`;
+        setPdfUrl(cacheBustedUrl);
+        setCurrentPdfDeckId(deckId);
+        setShowPdfViewer(true);
+        setDeckByProspect((m) => ({ ...m, [p.id]: { status: "ready", deck: rendered } }));
+      }
+    } catch (e: any) {
+      alert(`PDF generation failed: ${e?.message || "Unknown error"}`);
+    }
+  }
+
+  async function handleRefreshPdf() {
+    if (!currentPdfDeckId) return;
+    
+    try {
+      const rendered = await api.renderDeck(currentPdfDeckId);
+      if (rendered.pdf_url) {
+        // Add cache-busting parameter to ensure fresh PDF
+        const cacheBustedUrl = `${rendered.pdf_url}?t=${Date.now()}`;
+        setPdfUrl(cacheBustedUrl);
+        // Update the deck in state
+        setDeckByProspect((m) => {
+          const owner = Object.keys(m).find((pid) =>
+            m[+pid]?.deck?.id === currentPdfDeckId
+          );
+          if (!owner) return m;
+          return { ...m, [+owner]: { ...m[+owner], deck: rendered } };
+        });
+        // Update the selected deck if it's the same one
+        if (selectedDeck?.id === currentPdfDeckId) {
+          setSelectedDeck(rendered);
+        }
+      }
+    } catch (e: any) {
+      alert(`PDF refresh failed: ${e?.message || "Unknown error"}`);
+    }
   }
 
   function handleOpenDeck(deck: Deck) {
@@ -222,9 +264,9 @@ export default function Page() {
                             <button
                               onClick={() => handleRenderAndDownload(p)}
                               className="rounded-lg border px-2 py-1.5 text-sm hover:bg-neutral-50"
-                              title="Download"
+                              title="View PDF"
                             >
-                              ⬇️
+                              👁️
                             </button>
                           </div>
                         )}
@@ -398,6 +440,149 @@ export default function Page() {
         </div>
       )}
 
+      {/* PDF Viewer Modal */}
+      {showPdfViewer && pdfUrl && pdfViewMode === "modal" && (
+        <div className="fixed inset-0 z-30 bg-black/40" onClick={() => setShowPdfViewer(false)}>
+          <div className="absolute inset-4 bg-white rounded-2xl overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">PDF Preview</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPdfViewMode("split")}
+                  className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                >
+                  Split View
+                </button>
+                <button
+                  onClick={() => window.open(pdfUrl, '_blank')}
+                  className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                >
+                  Open in New Tab
+                </button>
+                <button
+                  onClick={() => setShowPdfViewer(false)}
+                  className="text-sm text-neutral-500 hover:text-neutral-700"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            
+            {/* PDF Content */}
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                title="PDF Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Split View PDF */}
+      {showPdfViewer && pdfUrl && pdfViewMode === "split" && (
+        <div className="fixed inset-0 z-30 bg-white">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b bg-white">
+            <h3 className="text-lg font-semibold">Split View - PDF Preview</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefreshPdf}
+                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                title="Refresh PDF after changes"
+              >
+                🔄 Refresh PDF
+              </button>
+              <button
+                onClick={() => setPdfViewMode("modal")}
+                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+              >
+                Modal View
+              </button>
+              <button
+                onClick={() => window.open(pdfUrl, '_blank')}
+                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+              >
+                Open in New Tab
+              </button>
+              <button
+                onClick={() => setShowPdfViewer(false)}
+                className="text-sm text-neutral-500 hover:text-neutral-700"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          
+          {/* Split Content */}
+          <div className="flex h-[calc(100vh-80px)]">
+            {/* Left side - Editor */}
+            <div className="w-1/2 border-r overflow-auto">
+              <div className="p-4">
+                <h4 className="text-md font-semibold mb-4">Editor</h4>
+                {rightPanelContent === "deck" && selectedDeck && (
+                  <DeckEditor
+                    deck={selectedDeck}
+                    onSave={async (payload: { title?: string; slides: any[] }) => {
+                      try {
+                        const updated = await api.updateDeck(selectedDeck.id, payload);
+                        // Update the deck in state
+                        setDeckByProspect((m) => {
+                          const owner = Object.keys(m).find((pid) =>
+                            m[+pid]?.deck?.id === selectedDeck.id
+                          );
+                          if (!owner) return m;
+                          return { ...m, [+owner]: { ...m[+owner], deck: updated } };
+                        });
+                        // Update the selected deck
+                        setSelectedDeck(updated);
+                      } catch (e: any) {
+                        alert(`Failed to save deck: ${e?.message || "Unknown error"}`);
+                      }
+                    }}
+                  />
+                )}
+                {rightPanelContent === "email" && selectedEmail && (
+                  <EmailEditor
+                    email={selectedEmail}
+                    onSave={async (payload) => {
+                      try {
+                        const updated = await api.updateEmail(selectedEmail.id, payload);
+                        // Update the email in state
+                        setEmailsByProspect((m) => {
+                          const owner = Object.keys(m).find((pid) =>
+                            m[+pid]?.batch?.items.some((i) => i.id === selectedEmail.id)
+                          );
+                          if (!owner) return m;
+                          const es = m[+owner];
+                          if (!es?.batch) return m;
+                          const items = es.batch.items.map((i) => (i.id === updated.id ? updated : i));
+                          return { ...m, [+owner]: { ...es, batch: { items } } };
+                        });
+                        // Update the selected email
+                        setSelectedEmail(updated);
+                      } catch (e: any) {
+                        alert(`Failed to save email: ${e?.message || "Unknown error"}`);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            
+            {/* Right side - PDF */}
+            <div className="w-1/2">
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full border-0"
+                title="PDF Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );
@@ -433,13 +618,16 @@ function DeckEditor({
     
     setAiLoading(true);
     try {
+      console.log("AI Edit Request:", { deckId: deck.id, slideIndex, prompt: aiPrompt });
       const updated = await api.aiEditDeckSlide(deck.id, slideIndex, aiPrompt);
+      console.log("AI Edit Response:", updated);
       setSlides(updated.slides);
       setAiEditing(null);
       setAiPrompt("");
       // Update the deck in the parent component
       await onSave({ title: updated.title, slides: updated.slides });
     } catch (e: any) {
+      console.error("AI Edit Error:", e);
       alert(`AI editing failed: ${e?.message || "Unknown error"}`);
     } finally {
       setAiLoading(false);
@@ -583,7 +771,9 @@ function EmailEditor({
     
     setAiLoading(true);
     try {
+      console.log("Email AI Edit Request:", { emailId: email.id, prompt: aiPrompt });
       const updated = await api.aiEditEmail(email.id, aiPrompt);
+      console.log("Email AI Edit Response:", updated);
       setSubject(updated.subject);
       setBody(updated.body);
       setAiEditing(false);
@@ -591,6 +781,7 @@ function EmailEditor({
       // Update the email in the parent component
       await onSave({ subject: updated.subject, body: updated.body });
     } catch (e: any) {
+      console.error("Email AI Edit Error:", e);
       alert(`AI editing failed: ${e?.message || "Unknown error"}`);
     } finally {
       setAiLoading(false);

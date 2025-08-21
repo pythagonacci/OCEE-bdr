@@ -236,3 +236,54 @@ def ai_edit_slide(deck_id: int, index: int, request: SlideAIEditRequest, db: Ses
         "slides": slides,
         "pdf_url": pdf_url,
     }
+
+@router.post("/debug/ai-edit-test", status_code=status.HTTP_200_OK)
+def debug_ai_edit_test(request: dict, db: Session = Depends(get_db)):
+    """
+    Debug endpoint to test AI editing functionality
+    """
+    try:
+        from ..services.ai import edit_deck_slide_content
+        
+        # Test data
+        current_slide = {
+            "title": "Market Opportunity",
+            "bullets": ["Industry tailwinds drive deal activity", "Consolidation creates seller leverage"]
+        }
+        
+        prospect_dict = {
+            "company_name": "Test Company",
+            "contact_name": "Test Contact",
+            "industry": "Technology",
+            "revenue_range": "$10M-$50M",
+            "location": "California",
+            "sale_motivation": "Retirement",
+            "signals": "Growth plateau"
+        }
+        
+        user_prompt = request.get("prompt", "Add more market opportunity information")
+        slide_index = request.get("slide_index", 1)
+        
+        result = edit_deck_slide_content(
+            current_slide=current_slide,
+            user_prompt=user_prompt,
+            prospect=prospect_dict,
+            slide_index=slide_index
+        )
+        
+        return {
+            "success": True,
+            "input": {
+                "current_slide": current_slide,
+                "user_prompt": user_prompt,
+                "slide_index": slide_index
+            },
+            "output": result
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
