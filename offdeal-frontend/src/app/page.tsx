@@ -182,42 +182,42 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-50">
+    <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <img src="/offdeal_logo.png" alt="OffDeal" className="h-8 w-auto" />
-            <div className="font-bold text-xl">OffDeal</div>
+            <div className="font-semibold text-xl text-gray-900">OffDeal</div>
             <button
               onClick={() => setShowModal(true)}
-              className="ml-4 rounded-xl border px-3 py-1.5 text-sm bg-black text-white hover:opacity-90"
+              className="ml-6 rounded-lg bg-[#f5f5dc] px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#e8e8d0] transition-colors border border-gray-300"
             >
               + Prospect
             </button>
           </div>
-          <div className="h-8 w-8 rounded-full bg-gray-300 grid place-items-center font-semibold text-sm">
+          <div className="h-8 w-8 rounded-full bg-gray-300 grid place-items-center font-semibold text-sm text-gray-700">
             OE
           </div>
         </div>
       </div>
 
       {/* Body: table + right pane */}
-      <div className="mx-auto max-w-7xl p-4 grid grid-cols-12 gap-4">
+      <div className="mx-auto max-w-7xl px-6 pb-6 grid grid-cols-12 gap-6 mt-8">
         <div className="col-span-8">
-          <div className="overflow-hidden rounded-2xl border bg-white">
-            <div className="grid grid-cols-5 bg-neutral-100 text-xs font-semibold uppercase tracking-wide text-neutral-600">
-              <div className="p-3 col-span-1 min-w-0">Name</div>
-              <div className="p-3 col-span-1 min-w-0">Phone number</div>
-              <div className="p-3 col-span-1 min-w-0">Email</div>
-              <div className="p-3 col-span-1 min-w-0">Deck</div>
-              <div className="p-3 col-span-1 min-w-0">Email sequence</div>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="grid grid-cols-5 bg-[#f5f5dc] text-xs font-semibold uppercase tracking-wide text-gray-600 border-b border-gray-200">
+              <div className="p-4 col-span-1 min-w-0">Name</div>
+              <div className="p-4 col-span-1 min-w-0">Phone number</div>
+              <div className="p-4 col-span-1 min-w-0">Email</div>
+              <div className="p-4 col-span-1 min-w-0">Deck</div>
+              <div className="p-4 col-span-1 min-w-0">Email sequence</div>
             </div>
 
             {loadingList ? (
-              <div className="p-6 text-sm text-neutral-500">Loading prospects…</div>
+              <div className="p-6 text-sm text-gray-500">Loading prospects…</div>
             ) : prospects.length === 0 ? (
-              <div className="p-6 text-sm text-neutral-500">No prospects yet. Add one to get started.</div>
+              <div className="p-6 text-sm text-gray-500">No prospects yet. Add one to get started.</div>
             ) : (
               <ul>
                 {prospects.map((p) => {
@@ -225,45 +225,48 @@ export default function Page() {
                   const emailState = emailsByProspect[p.id] || { status: "idle" as const };
 
                   return (
-                    <li key={p.id} className="grid grid-cols-5 border-t">
-                      <div className="p-3 col-span-1 min-w-0">
-                        <div className="font-medium truncate">{p.company_name}</div>
-                        {p.contact_name && <div className="text-xs text-neutral-500 truncate">{p.contact_name}</div>}
+                    <li key={p.id} className="grid grid-cols-5 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <div className="p-4 col-span-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{p.company_name}</div>
+                        {p.contact_name && <div className="text-xs text-gray-500 truncate">{p.contact_name}</div>}
                       </div>
-                      <div className="p-3 col-span-1 text-sm text-neutral-700 min-w-0 truncate">{(p as any).phone_number || "-"}</div>
-                      <div className="p-3 col-span-1 text-sm text-neutral-700 truncate" title={p.email || "-"}>{p.email || "-"}</div>
+                      <div className="p-4 col-span-1 text-sm text-gray-700 min-w-0 truncate">{(p as any).phone_number || "-"}</div>
+                      <div className="p-4 col-span-1 text-sm text-gray-700 truncate" title={p.email || "-"}>{p.email || "-"}</div>
 
                       {/* Deck column */}
-                      <div className="p-3 col-span-1 min-w-0">
+                      <div className="p-4 col-span-1 min-w-0">
                         {deckState.status === "idle" && (
                           <button
                             onClick={() => handleGenerateDeck(p)}
-                            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                           >
                             Generate
                           </button>
                         )}
                         {deckState.status === "loading" && (
-                          <div className="text-sm text-neutral-500">Generating…</div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-[#f5f5dc] rounded-full animate-spin"></div>
+                            Generating…
+                          </div>
                         )}
                         {deckState.status === "ready" && deckState.deck && (
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleOpenDeck(deckState.deck!)}
-                              className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                              className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                             >
                               Open
                             </button>
                             <button
                               onClick={() => handleOpenDeck(deckState.deck!)}
-                              className="rounded-lg border px-2 py-1.5 text-sm hover:bg-neutral-50"
+                              className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                               title="Edit"
                             >
                               ✏️
                             </button>
                             <button
                               onClick={() => handleRenderAndDownload(p)}
-                              className="rounded-lg border px-2 py-1.5 text-sm hover:bg-neutral-50"
+                              className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                               title="View PDF"
                             >
                               👁️
@@ -273,17 +276,20 @@ export default function Page() {
                       </div>
 
                       {/* Email sequence column */}
-                      <div className="p-3 col-span-1 min-w-0">
+                      <div className="p-4 col-span-1 min-w-0">
                         {emailState.status === "idle" && (
                           <button
                             onClick={() => handleGenerateEmails(p)}
-                            className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors"
                           >
                             Generate
                           </button>
                         )}
                         {emailState.status === "loading" && (
-                          <div className="text-sm text-neutral-500">Generating…</div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <div className="w-4 h-4 border-2 border-gray-300 border-t-[#f5f5dc] rounded-full animate-spin"></div>
+                            Generating…
+                          </div>
                         )}
                         {emailState.status === "ready" && emailState.batch && (
                           <div className="flex flex-col gap-2 max-w-full">
@@ -291,24 +297,26 @@ export default function Page() {
                               .sort((a, b) => a.sequence_index - b.sequence_index)
                               .map((item) => {
                                 const isSent = sentEmails.has(item.id);
+                                const emailLabels = ["Intro", "Case Study", "Act Now"];
+                                const emailLabel = emailLabels[item.sequence_index - 1] || `Email ${item.sequence_index}`;
                                 return (
                                   <div key={item.id} className="flex items-center gap-2">
-                                                                         <button
-                                       onClick={() => handleOpenEmail(item)}
-                                       className="flex-1 text-left px-3 py-2 rounded-lg border hover:bg-neutral-50 text-sm truncate"
-                                       title={`Email ${item.sequence_index}: ${item.subject}`}
-                                     >
-                                       Email {item.sequence_index}
-                                     </button>
+                                    <button
+                                      onClick={() => handleOpenEmail(item)}
+                                      className="flex-1 text-left px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm truncate transition-colors"
+                                      title={`${emailLabel}: ${item.subject}`}
+                                    >
+                                      {emailLabel}
+                                    </button>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         toggleEmailSent(item.id);
                                       }}
-                                      className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs ${
+                                      className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs transition-colors ${
                                         isSent 
-                                          ? "bg-green-500 text-white border-green-500" 
-                                          : "bg-white text-gray-400 border-gray-300 hover:border-green-500"
+                                          ? "bg-[#f5f5dc] text-gray-700 border-[#f5f5dc]" 
+                                          : "bg-white text-gray-400 border-gray-300 hover:border-[#f5f5dc]"
                                       }`}
                                       title={isSent ? "Mark as unsent" : "Mark as sent"}
                                     >
@@ -330,9 +338,9 @@ export default function Page() {
 
         {/* Right-side content panel */}
         <div className="col-span-4">
-          <div className="rounded-2xl border bg-white p-5 h-[620px] overflow-auto">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 h-[620px] overflow-auto shadow-sm">
             {!rightPanelContent && (
-              <div className="text-sm text-neutral-500">Click on a deck or email to view and edit.</div>
+              <div className="text-sm text-gray-500">Click on a deck or email to view and edit.</div>
             )}
             {rightPanelContent === "deck" && selectedDeck && (
               <DeckEditor
@@ -389,12 +397,12 @@ export default function Page() {
       {showModal && (
         <div className="fixed inset-0 z-20 grid place-items-center bg-black/40 p-4" onClick={() => setShowModal(false)}>
           <div
-            className="w-full max-w-2xl rounded-2xl border bg-white p-6"
+            className="w-full max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">New Prospect</h3>
-              <button onClick={() => setShowModal(false)} className="text-sm text-neutral-500">✕</button>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">New Prospect</h3>
+              <button onClick={() => setShowModal(false)} className="text-sm text-gray-500 hover:text-gray-700">✕</button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -409,18 +417,18 @@ export default function Page() {
                 ["signals", "Signals"],
               ].map(([key, label]) => (
                 <label key={key} className="text-sm">
-                  <div className="mb-1 text-neutral-600">{label}</div>
-                  <input
-                    className="w-full rounded-lg border px-3 py-2"
-                    value={(form as any)[key] || ""}
-                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  />
+                  <div className="mb-2 text-gray-600 font-medium">{label}</div>
+                                      <input
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f5f5dc] focus:border-transparent"
+                      value={(form as any)[key] || ""}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    />
                 </label>
               ))}
               <label className="col-span-2 text-sm">
-                <div className="mb-1 text-neutral-600">Notes</div>
+                <div className="mb-2 text-gray-600 font-medium">Notes</div>
                 <textarea
-                  className="w-full rounded-lg border px-3 py-2"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f5f5dc] focus:border-transparent"
                   rows={3}
                   value={form.notes || ""}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -428,11 +436,11 @@ export default function Page() {
               </label>
             </div>
 
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setShowModal(false)} className="rounded-lg border px-3 py-2 text-sm">
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowModal(false)} className="btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleCreateProspect} className="rounded-lg bg-black px-3 py-2 text-sm text-white">
+              <button onClick={handleCreateProspect} className="btn-primary">
                 Save
               </button>
             </div>
@@ -443,26 +451,26 @@ export default function Page() {
       {/* PDF Viewer Modal */}
       {showPdfViewer && pdfUrl && pdfViewMode === "modal" && (
         <div className="fixed inset-0 z-30 bg-black/40" onClick={() => setShowPdfViewer(false)}>
-          <div className="absolute inset-4 bg-white rounded-2xl overflow-hidden flex flex-col">
+          <div className="absolute inset-4 bg-white rounded-xl overflow-hidden flex flex-col shadow-xl">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold">PDF Preview</h3>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">PDF Preview</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPdfViewMode("split")}
-                  className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                  className="btn-secondary"
                 >
                   Split View
                 </button>
                 <button
                   onClick={() => window.open(pdfUrl, '_blank')}
-                  className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                  className="btn-secondary"
                 >
                   Open in New Tab
                 </button>
                 <button
                   onClick={() => setShowPdfViewer(false)}
-                  className="text-sm text-neutral-500 hover:text-neutral-700"
+                  className="text-sm text-gray-500 hover:text-gray-700"
                 >
                   ✕
                 </button>
@@ -485,31 +493,31 @@ export default function Page() {
       {showPdfViewer && pdfUrl && pdfViewMode === "split" && (
         <div className="fixed inset-0 z-30 bg-white">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-white">
-            <h3 className="text-lg font-semibold">Split View - PDF Preview</h3>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+            <h3 className="text-lg font-semibold text-gray-900">Split View - PDF Preview</h3>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleRefreshPdf}
-                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                className="btn-secondary"
                 title="Refresh PDF after changes"
               >
                 🔄 Refresh PDF
               </button>
               <button
                 onClick={() => setPdfViewMode("modal")}
-                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                className="btn-secondary"
               >
                 Modal View
               </button>
               <button
                 onClick={() => window.open(pdfUrl, '_blank')}
-                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-neutral-50"
+                className="btn-secondary"
               >
                 Open in New Tab
               </button>
               <button
                 onClick={() => setShowPdfViewer(false)}
-                className="text-sm text-neutral-500 hover:text-neutral-700"
+                className="text-sm text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
@@ -519,9 +527,9 @@ export default function Page() {
           {/* Split Content */}
           <div className="flex h-[calc(100vh-80px)]">
             {/* Left side - Editor */}
-            <div className="w-1/2 border-r overflow-auto">
+            <div className="w-1/2 border-r border-gray-200 overflow-auto">
               <div className="p-4">
-                <h4 className="text-md font-semibold mb-4">Editor</h4>
+                <h4 className="text-md font-semibold mb-4 text-gray-900">Editor</h4>
                 {rightPanelContent === "deck" && selectedDeck && (
                   <DeckEditor
                     deck={selectedDeck}
@@ -637,25 +645,25 @@ function DeckEditor({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-neutral-600">Deck Title</label>
+        <label className="text-sm font-medium text-gray-600">Deck Title</label>
         <input
-          className="w-full rounded-lg border px-3 py-2 text-base"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-neutral-600">Slides</label>
+        <label className="text-sm font-medium text-gray-600">Slides</label>
         <div className="max-h-96 overflow-y-auto space-y-4">
           {slides.map((slide, index) => (
-            <div key={index} className="border rounded-lg p-4">
+            <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-neutral-600">Slide {index + 1} Title</label>
+                  <label className="text-sm font-medium text-gray-600">Slide {index + 1} Title</label>
                   <button
                     onClick={() => setAiEditing(aiEditing === index ? null : index)}
-                    className="text-xs px-2 py-1 rounded border hover:bg-neutral-50"
+                    className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 transition-colors"
                   >
                     {aiEditing === index ? "Cancel AI Edit" : "AI Edit"}
                   </button>
@@ -664,7 +672,7 @@ function DeckEditor({
                 {aiEditing === index ? (
                   <div className="space-y-2">
                     <textarea
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       rows={2}
                       placeholder="Describe what changes you want the AI to make to this slide..."
                       value={aiPrompt}
@@ -674,7 +682,7 @@ function DeckEditor({
                       <button
                         onClick={() => handleAIEdit(index)}
                         disabled={aiLoading || !aiPrompt.trim()}
-                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
                       >
                         {aiLoading ? "AI Editing..." : "Apply AI Changes"}
                       </button>
@@ -683,7 +691,7 @@ function DeckEditor({
                           setAiEditing(null);
                           setAiPrompt("");
                         }}
-                        className="px-3 py-1 text-xs border rounded hover:bg-neutral-50"
+                        className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                       >
                         Cancel
                       </button>
@@ -691,7 +699,7 @@ function DeckEditor({
                   </div>
                 ) : (
                   <input
-                    className="w-full rounded-lg border px-3 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     value={slide.title}
                     onChange={(e) => {
                       const newSlides = [...slides];
@@ -701,14 +709,14 @@ function DeckEditor({
                   />
                 )}
                 
-                <label className="text-sm font-medium text-neutral-600">Bullets</label>
+                <label className="text-sm font-medium text-gray-600">Bullets</label>
                 {aiEditing === index ? (
-                  <div className="text-xs text-neutral-500 p-2 bg-neutral-50 rounded">
+                  <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
                     Use the AI edit feature above to modify bullets, or switch back to manual editing.
                   </div>
                 ) : (
                   <textarea
-                    className="w-full rounded-lg border px-3 py-2"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     rows={3}
                     value={slide.bullets.join('\n')}
                     onChange={(e) => {
@@ -732,7 +740,7 @@ function DeckEditor({
         <button
           onClick={save}
           disabled={saving}
-          className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+          className="btn-primary disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
         </button>
@@ -791,10 +799,15 @@ function EmailEditor({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase text-neutral-500">Email {email.sequence_index}</div>
+        <div className="text-xs font-semibold uppercase text-gray-500">
+          {(() => {
+            const emailLabels = ["Intro", "Case Study", "Act Now"];
+            return emailLabels[email.sequence_index - 1] || `Email ${email.sequence_index}`;
+          })()}
+        </div>
         <button
           onClick={() => setAiEditing(!aiEditing)}
-          className="text-xs px-2 py-1 rounded border hover:bg-neutral-50"
+          className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 transition-colors"
         >
           {aiEditing ? "Cancel AI Edit" : "AI Edit"}
         </button>
@@ -803,7 +816,7 @@ function EmailEditor({
       {aiEditing ? (
         <div className="space-y-3">
           <textarea
-            className="w-full rounded-lg border px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             rows={3}
             placeholder="Describe what changes you want the AI to make to this email..."
             value={aiPrompt}
@@ -813,7 +826,7 @@ function EmailEditor({
             <button
               onClick={handleAIEdit}
               disabled={aiLoading || !aiPrompt.trim()}
-              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               {aiLoading ? "AI Editing..." : "Apply AI Changes"}
             </button>
@@ -822,24 +835,24 @@ function EmailEditor({
                 setAiEditing(false);
                 setAiPrompt("");
               }}
-              className="px-3 py-1 text-xs border rounded hover:bg-neutral-50"
+              className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
           </div>
-          <div className="text-xs text-neutral-500 p-2 bg-neutral-50 rounded">
+          <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
             AI editing mode: Describe your desired changes above, then click "Apply AI Changes" to update the email.
           </div>
         </div>
       ) : (
         <>
           <input
-            className="w-full rounded-lg border px-3 py-2 text-base"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           />
           <textarea
-            className="w-full rounded-lg border px-3 py-2 min-h-[380px]"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-[380px] focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
@@ -850,7 +863,7 @@ function EmailEditor({
         <button
           onClick={save}
           disabled={saving}
-          className="rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-60"
+          className="btn-primary disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save"}
         </button>

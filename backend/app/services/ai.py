@@ -159,7 +159,7 @@ OffDeal addresses these pains with a modern, AI-driven process: AI algorithm mat
 
 Instructions for Analyzing Industry-Specific M&A Trends:
 If the prospect data includes an industry (or can be inferred), analyze current 2025 M&A trends for that specific industry to inform the deck, especially market_opportunity. Follow these steps:
-1. Identify the core industry and any sub-sectors/regions from prospect data.
+1. Identify the core industry and any sub-sectors/regions from prospect data. This is important. 
 2. Draw from factual 2025 trends (use the background above and your knowledge): assess deal volume changes (e.g., increases in healthcare or services), valuation shifts (e.g., higher multiples in retail/tech), key drivers (e.g., consolidation due to aging owners, technology adoption like AI, regulatory changes, economic factors like lower rates enabling financing), buyer types and interest (e.g., PE firms targeting scalable firms, strategic acquirers in consolidating sectors), and timing factors (e.g., surges in Q2 deal supply, optimism from favorable regulations).
 3. Ensure analysis is relevant and factual—provide detailed insights without conciseness constraints where needed, but tie directly to why it's an opportune time for exit (e.g., rising values amid selective buying creates seller advantages).
 4. For example: In healthcare, highlight 75% YoY deal volume rise driven by tech integration and demographics; in retail, note 13% price increases from consumer shifts; if no specific industry, use general SMB trends like value growth despite volume dips.
