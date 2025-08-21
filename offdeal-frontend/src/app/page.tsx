@@ -474,7 +474,7 @@ export default function Page() {
               <iframe
                 src={pdfUrl}
                 className="w-full h-full border-0"
-                title="PDF Preview"
+                title="PDF Preview Yaya"
               />
             </div>
           </div>
