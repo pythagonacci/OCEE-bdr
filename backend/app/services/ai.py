@@ -195,3 +195,141 @@ Prospect data:
             slides[i]["bullets"] = ["Content unavailable."]
 
     return {"slides": slides, "deck_title": deck_title}
+
+def edit_deck_slide_content(
+    current_slide: Dict[str, Any], 
+    user_prompt: str, 
+    prospect: Dict[str, Any],
+    slide_index: int
+) -> Dict[str, Any]:
+    """
+    Edit a specific slide based on user prompt and current content.
+    Returns the updated slide with modified title and/or bullets.
+    """
+    slide_titles = ["Cover", "Market Opportunity", "Why OffDeal", "Positioning for Maximum Value", "Process & Next Steps"]
+    slide_title = slide_titles[slide_index] if slide_index < len(slide_titles) else f"Slide {slide_index + 1}"
+    
+    current_title = current_slide.get("title", "")
+    current_bullets = current_slide.get("bullets", [])
+    
+    prospect_json = json.dumps(prospect, ensure_ascii=False)
+    current_content_json = json.dumps({
+        "title": current_title,
+        "bullets": current_bullets
+    }, ensure_ascii=False)
+    
+    prompt = f"""
+You are an expert in SMB M&A (small/medium businesses with $5M-$100M revenue) and a pitch deck copywriter for OffDeal, an AI-native investment bank revolutionizing SMB exits.
+
+You are editing slide {slide_index + 1} ({slide_title}) of a pitch deck. The user has provided a specific request for changes.
+
+Current slide content:
+{current_content_json}
+
+User's edit request:
+{user_prompt}
+
+Prospect data for context:
+{prospect_json}
+
+Instructions:
+1. Analyze the user's request carefully and understand what changes they want
+2. Maintain the professional tone and style of OffDeal pitch decks
+3. Keep the content relevant to SMB M&A and the specific prospect's industry
+4. Ensure bullets are concrete, persuasive, and focused (15-30 words ideal)
+5. If the user wants more information about market opportunities, incorporate current 2025 M&A trends for the prospect's industry
+6. If the user wants changes to the title, make it compelling and relevant
+7. If the user wants changes to bullets, ensure they are specific, actionable, and support the slide's purpose
+8. Do not include any prospect's personal/confidential information
+9. Avoid naming specific buyer companies
+
+Return a single JSON object with exactly these keys: title, bullets
+- title: The updated slide title (keep current if no title change requested)
+- bullets: Array of 3-7 updated bullet points (keep current if no bullet changes requested)
+
+Only modify what the user specifically requested. If they want more market opportunity information, add relevant industry-specific M&A trends. If they want different positioning, focus on business strengths that appeal to buyers.
+"""
+
+    try:
+        raw = _openai_json_response(prompt)
+        if isinstance(raw, dict) and "title" in raw and "bullets" in raw:
+            # Validate and normalize the response
+            title = _truncate(_strip_markup(raw.get("title", current_title)), settings.TITLE_MAX_CHARS) or current_title
+            bullets = _coerce_bullets(raw.get("bullets", current_bullets))
+            
+            # Ensure we have at least some bullets for non-cover slides
+            if slide_index > 0 and not bullets:
+                bullets = ["Content unavailable."]
+            
+            return {
+                "title": title,
+                "bullets": bullets
+            }
+        else:
+            raise AIFormatError("Invalid response format from AI")
+    except Exception as e:
+        logger.error(f"AI editing failed: {e}")
+        raise AIFormatError(f"Failed to edit slide content: {e}")
+
+def edit_email_content(
+    current_subject: str,
+    current_body: str,
+    user_prompt: str,
+    prospect: Dict[str, Any],
+    sequence_index: int
+) -> Dict[str, str]:
+    """
+    Edit email content based on user prompt and current content.
+    Returns the updated subject and body.
+    """
+    prospect_json = json.dumps(prospect, ensure_ascii=False)
+    
+    prompt = f"""
+You are an expert in SMB M&A email outreach and a copywriter for OffDeal, an AI-native investment bank revolutionizing SMB exits.
+
+You are editing email {sequence_index} in a sequence. The user has provided a specific request for changes.
+
+Current email content:
+Subject: {current_subject}
+Body: {current_body}
+
+User's edit request:
+{user_prompt}
+
+Prospect data for context:
+{prospect_json}
+
+Instructions:
+1. Analyze the user's request carefully and understand what changes they want
+2. Maintain the professional, persuasive tone of OffDeal email sequences
+3. Keep the content relevant to SMB M&A and the specific prospect's business
+4. Ensure the subject line is compelling and relevant
+5. Ensure the body is well-structured, professional, and persuasive
+6. If the user wants more information about market opportunities, incorporate current 2025 M&A trends for the prospect's industry
+7. If the user wants changes to tone, style, or content focus, apply those changes appropriately
+8. Do not include any prospect's personal/confidential information
+9. Maintain the email's purpose in the sequence (intro, follow-up, etc.)
+
+Return a single JSON object with exactly these keys: subject, body
+- subject: The updated email subject line
+- body: The updated email body text
+
+Only modify what the user specifically requested. If they want more market opportunity information, add relevant industry-specific M&A trends. If they want different tone or style, adjust accordingly while maintaining professionalism.
+"""
+
+    try:
+        raw = _openai_json_response(prompt)
+        if isinstance(raw, dict) and "subject" in raw and "body" in raw:
+            # Validate and normalize the response
+            subject = _truncate(_strip_markup(raw.get("subject", current_subject)), 200) or current_subject
+            body = raw.get("body", current_body).strip() or current_body
+            
+            return {
+                "subject": subject,
+                "body": body
+            }
+        else:
+            raise AIFormatError("Invalid response format from AI")
+    except Exception as e:
+        logger.error(f"AI editing failed: {e}")
+        raise AIFormatError(f"Failed to edit email content: {e}")

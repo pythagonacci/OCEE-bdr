@@ -145,6 +145,7 @@ export default function Page() {
       <div className="sticky top-0 z-10 border-b bg-white">
         <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <img src="/offdeal_logo.png" alt="OffDeal" className="h-8 w-auto" />
             <div className="font-bold text-xl">OffDeal</div>
             <button
               onClick={() => setShowModal(true)}
@@ -412,6 +413,9 @@ function DeckEditor({
   const [title, setTitle] = useState(deck.title);
   const [slides, setSlides] = useState(deck.slides);
   const [saving, setSaving] = useState(false);
+  const [aiEditing, setAiEditing] = useState<number | null>(null);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     setTitle(deck.title);
@@ -422,6 +426,24 @@ function DeckEditor({
     setSaving(true);
     await onSave({ title, slides });
     setSaving(false);
+  }
+
+  async function handleAIEdit(slideIndex: number) {
+    if (!aiPrompt.trim()) return;
+    
+    setAiLoading(true);
+    try {
+      const updated = await api.aiEditDeckSlide(deck.id, slideIndex, aiPrompt);
+      setSlides(updated.slides);
+      setAiEditing(null);
+      setAiPrompt("");
+      // Update the deck in the parent component
+      await onSave({ title: updated.title, slides: updated.slides });
+    } catch (e: any) {
+      alert(`AI editing failed: ${e?.message || "Unknown error"}`);
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   return (
@@ -441,31 +463,77 @@ function DeckEditor({
           {slides.map((slide, index) => (
             <div key={index} className="border rounded-lg p-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-neutral-600">Slide {index + 1} Title</label>
-                <input
-                  className="w-full rounded-lg border px-3 py-2"
-                  value={slide.title}
-                  onChange={(e) => {
-                    const newSlides = [...slides];
-                    newSlides[index] = { ...slide, title: e.target.value };
-                    setSlides(newSlides);
-                  }}
-                />
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-neutral-600">Slide {index + 1} Title</label>
+                  <button
+                    onClick={() => setAiEditing(aiEditing === index ? null : index)}
+                    className="text-xs px-2 py-1 rounded border hover:bg-neutral-50"
+                  >
+                    {aiEditing === index ? "Cancel AI Edit" : "AI Edit"}
+                  </button>
+                </div>
+                
+                {aiEditing === index ? (
+                  <div className="space-y-2">
+                    <textarea
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                      rows={2}
+                      placeholder="Describe what changes you want the AI to make to this slide..."
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAIEdit(index)}
+                        disabled={aiLoading || !aiPrompt.trim()}
+                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {aiLoading ? "AI Editing..." : "Apply AI Changes"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAiEditing(null);
+                          setAiPrompt("");
+                        }}
+                        className="px-3 py-1 text-xs border rounded hover:bg-neutral-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <input
+                    className="w-full rounded-lg border px-3 py-2"
+                    value={slide.title}
+                    onChange={(e) => {
+                      const newSlides = [...slides];
+                      newSlides[index] = { ...slide, title: e.target.value };
+                      setSlides(newSlides);
+                    }}
+                  />
+                )}
+                
                 <label className="text-sm font-medium text-neutral-600">Bullets</label>
-                <textarea
-                  className="w-full rounded-lg border px-3 py-2"
-                  rows={3}
-                  value={slide.bullets.join('\n')}
-                  onChange={(e) => {
-                    const newSlides = [...slides];
-                    newSlides[index] = { 
-                      ...slide, 
-                      bullets: e.target.value.split('\n').filter(bullet => bullet.trim())
-                    };
-                    setSlides(newSlides);
-                  }}
-                  placeholder="Enter bullets, one per line"
-                />
+                {aiEditing === index ? (
+                  <div className="text-xs text-neutral-500 p-2 bg-neutral-50 rounded">
+                    Use the AI edit feature above to modify bullets, or switch back to manual editing.
+                  </div>
+                ) : (
+                  <textarea
+                    className="w-full rounded-lg border px-3 py-2"
+                    rows={3}
+                    value={slide.bullets.join('\n')}
+                    onChange={(e) => {
+                      const newSlides = [...slides];
+                      newSlides[index] = { 
+                        ...slide, 
+                        bullets: e.target.value.split('\n').filter(bullet => bullet.trim())
+                      };
+                      setSlides(newSlides);
+                    }}
+                    placeholder="Enter bullets, one per line"
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -495,6 +563,9 @@ function EmailEditor({
   const [subject, setSubject] = useState(email.subject);
   const [body, setBody] = useState(email.body);
   const [saving, setSaving] = useState(false);
+  const [aiEditing, setAiEditing] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     setSubject(email.subject);
@@ -507,19 +578,83 @@ function EmailEditor({
     setSaving(false);
   }
 
+  async function handleAIEdit() {
+    if (!aiPrompt.trim()) return;
+    
+    setAiLoading(true);
+    try {
+      const updated = await api.aiEditEmail(email.id, aiPrompt);
+      setSubject(updated.subject);
+      setBody(updated.body);
+      setAiEditing(false);
+      setAiPrompt("");
+      // Update the email in the parent component
+      await onSave({ subject: updated.subject, body: updated.body });
+    } catch (e: any) {
+      alert(`AI editing failed: ${e?.message || "Unknown error"}`);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="text-xs font-semibold uppercase text-neutral-500">Email {email.sequence_index}</div>
-      <input
-        className="w-full rounded-lg border px-3 py-2 text-base"
-        value={subject}
-        onChange={(e) => setSubject(e.target.value)}
-      />
-      <textarea
-        className="w-full rounded-lg border px-3 py-2 min-h-[380px]"
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-      />
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase text-neutral-500">Email {email.sequence_index}</div>
+        <button
+          onClick={() => setAiEditing(!aiEditing)}
+          className="text-xs px-2 py-1 rounded border hover:bg-neutral-50"
+        >
+          {aiEditing ? "Cancel AI Edit" : "AI Edit"}
+        </button>
+      </div>
+      
+      {aiEditing ? (
+        <div className="space-y-3">
+          <textarea
+            className="w-full rounded-lg border px-3 py-2 text-sm"
+            rows={3}
+            placeholder="Describe what changes you want the AI to make to this email..."
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleAIEdit}
+              disabled={aiLoading || !aiPrompt.trim()}
+              className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {aiLoading ? "AI Editing..." : "Apply AI Changes"}
+            </button>
+            <button
+              onClick={() => {
+                setAiEditing(false);
+                setAiPrompt("");
+              }}
+              className="px-3 py-1 text-xs border rounded hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="text-xs text-neutral-500 p-2 bg-neutral-50 rounded">
+            AI editing mode: Describe your desired changes above, then click "Apply AI Changes" to update the email.
+          </div>
+        </div>
+      ) : (
+        <>
+          <input
+            className="w-full rounded-lg border px-3 py-2 text-base"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
+          <textarea
+            className="w-full rounded-lg border px-3 py-2 min-h-[380px]"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+        </>
+      )}
+      
       <div className="flex justify-end">
         <button
           onClick={save}

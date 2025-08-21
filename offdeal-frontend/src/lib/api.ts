@@ -45,6 +45,15 @@ export const api = {
       })
     );
   },
+  async aiEditDeckSlide(deckId: number, slideIndex: number, prompt: string) {
+    return j<import("../types").Deck>(
+      await fetch(`${BASE}/decks/${deckId}/slides/${slideIndex}/ai-edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      })
+    );
+  },
 
   // Emails
   async generateEmails(prospectId: number) {
@@ -63,6 +72,15 @@ export const api = {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+      })
+    );
+  },
+  async aiEditEmail(emailId: number, prompt: string) {
+    return j<import("../types").EmailItem>(
+      await fetch(`${BASE}/emails/item/${emailId}/ai-edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
       })
     );
   },

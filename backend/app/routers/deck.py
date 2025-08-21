@@ -7,7 +7,7 @@ from ..database import get_db
 from ..models.prospect import Prospect
 from ..models.deck import Deck
 from ..schemas.deck import DeckOut, DeckUpdate
-from ..services.ai import generate_deck_content, AIUnavailableError, AIFormatError
+from ..services.ai import generate_deck_content, edit_deck_slide_content, AIUnavailableError, AIFormatError
 from ..services.pdf import render_deck_to_pdf, TemplateError, RenderError, FileIOError
 from ..services.slides import validate_and_normalize_slides, _strip_markup, _truncate
 from ..config import settings
@@ -167,6 +167,62 @@ def patch_slide(deck_id: int, index: int, patch: SlidePatch, db: Session = Depen
         slide.update(normalized)
 
     slides[index] = slide
+    d.slides_json = json.dumps(slides, ensure_ascii=False)
+    db.add(d)
+    db.commit()
+    db.refresh(d)
+
+    pdf_url = settings.APP_BASE_URL.rstrip("/") + (d.pdf_path or "") if d.pdf_path else None
+    return {
+        "id": d.id,
+        "prospect_id": d.prospect_id,
+        "title": d.title,
+        "slides": slides,
+        "pdf_url": pdf_url,
+    }
+
+class SlideAIEditRequest(BaseModel):
+    prompt: str
+
+@router.post("/{deck_id}/slides/{index}/ai-edit", status_code=status.HTTP_200_OK)
+def ai_edit_slide(deck_id: int, index: int, request: SlideAIEditRequest, db: Session = Depends(get_db)):
+    d = db.get(Deck, deck_id)
+    if not d:
+        raise HTTPException(status_code=404, detail="Deck not found")
+
+    slides = json.loads(d.slides_json)
+    if index < 0 or index >= len(slides):
+        raise HTTPException(status_code=404, detail="Slide index out of range")
+
+    # Get prospect data for context
+    p = db.get(Prospect, d.prospect_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Prospect not found")
+
+    prospect_dict = {
+        "company_name": p.company_name,
+        "contact_name": p.contact_name,
+        "industry": p.industry,
+        "revenue_range": p.revenue_range,
+        "location": p.location,
+        "sale_motivation": p.sale_motivation,
+        "signals": p.signals,
+    }
+
+    try:
+        updated_slide = edit_deck_slide_content(
+            current_slide=slides[index],
+            user_prompt=request.prompt,
+            prospect=prospect_dict,
+            slide_index=index
+        )
+    except AIUnavailableError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except AIFormatError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+    # Update the slide
+    slides[index] = updated_slide
     d.slides_json = json.dumps(slides, ensure_ascii=False)
     db.add(d)
     db.commit()
