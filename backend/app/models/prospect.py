@@ -12,6 +12,7 @@ class Prospect(Base):
     company_name = Column(String, nullable=False)
     contact_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
 
     # Context for personalization
     industry = Column(String, nullable=True)

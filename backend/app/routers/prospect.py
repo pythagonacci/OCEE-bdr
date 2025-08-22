@@ -13,6 +13,7 @@ def create_prospect(payload: ProspectCreate, db: Session = Depends(get_db)):
         company_name=payload.company_name.strip(),
         contact_name=(payload.contact_name or None),
         email=(str(payload.email) if payload.email else None),
+        phone_number=(payload.phone_number or None),
         industry=(payload.industry or None),
         revenue_range=(payload.revenue_range or None),
         location=(payload.location or None),
@@ -49,6 +50,8 @@ def update_prospect(prospect_id: int, payload: ProspectUpdate, db: Session = Dep
         p.contact_name = payload.contact_name
     if payload.email is not None:
         p.email = str(payload.email) if payload.email else None
+    if payload.phone_number is not None:
+        p.phone_number = payload.phone_number
     if payload.industry is not None:
         p.industry = payload.industry
     if payload.revenue_range is not None:

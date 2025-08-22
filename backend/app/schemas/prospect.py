@@ -5,6 +5,7 @@ class ProspectCreate(BaseModel):
     company_name: str
     contact_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
     industry: Optional[str] = None
     revenue_range: Optional[str] = None
     location: Optional[str] = None
@@ -16,6 +17,7 @@ class ProspectUpdate(BaseModel):
     company_name: Optional[str] = None
     contact_name: Optional[str] = None
     email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
     industry: Optional[str] = None
     revenue_range: Optional[str] = None
     location: Optional[str] = None

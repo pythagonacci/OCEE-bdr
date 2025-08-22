@@ -38,6 +38,7 @@ export default function Page() {
     company_name: "",
     contact_name: "",
     email: "",
+    phone_number: "",
     industry: "",
     revenue_range: "",
     location: "",
@@ -74,6 +75,7 @@ export default function Page() {
       company_name: form.company_name!.trim(),
       contact_name: form.contact_name?.trim() || undefined,
       email: form.email?.trim() || undefined,
+      phone_number: form.phone_number?.trim() || undefined,
       industry: form.industry?.trim() || undefined,
       revenue_range: form.revenue_range?.trim() || undefined,
       location: form.location?.trim() || undefined,
@@ -92,6 +94,7 @@ export default function Page() {
       company_name: prospect.company_name,
       contact_name: prospect.contact_name || "",
       email: prospect.email || "",
+      phone_number: prospect.phone_number || "",
       industry: prospect.industry || "",
       revenue_range: prospect.revenue_range || "",
       location: prospect.location || "",
@@ -108,6 +111,7 @@ export default function Page() {
       company_name: form.company_name!.trim(),
       contact_name: form.contact_name?.trim() || undefined,
       email: form.email?.trim() || undefined,
+      phone_number: form.phone_number?.trim() || undefined,
       industry: form.industry?.trim() || undefined,
       revenue_range: form.revenue_range?.trim() || undefined,
       location: form.location?.trim() || undefined,
@@ -279,7 +283,7 @@ export default function Page() {
                           </button>
                         </div>
                       </div>
-                      <div className="p-4 col-span-1 text-sm text-gray-700 min-w-0 truncate">{(p as any).phone_number || "-"}</div>
+                      <div className="p-4 col-span-1 text-sm text-gray-700 min-w-0 truncate">{p.phone_number || "-"}</div>
                       <div className="p-4 col-span-1 text-sm text-gray-700 truncate" title={p.email || "-"}>{p.email || "-"}</div>
 
                       {/* Deck column */}
@@ -459,6 +463,7 @@ export default function Page() {
                 ["company_name", "Company name*"],
                 ["contact_name", "Contact name"],
                 ["email", "Email"],
+                ["phone_number", "Phone number"],
                 ["industry", "Industry"],
                 ["revenue_range", "Revenue range"],
                 ["location", "Location"],
@@ -514,6 +519,7 @@ export default function Page() {
                 ["company_name", "Company name*"],
                 ["contact_name", "Contact name"],
                 ["email", "Email"],
+                ["phone_number", "Phone number"],
                 ["industry", "Industry"],
                 ["revenue_range", "Revenue range"],
                 ["location", "Location"],
