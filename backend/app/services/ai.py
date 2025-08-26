@@ -148,6 +148,7 @@ def generate_deck_content(prospect: Dict[str, Any]) -> dict:
     deck_title = f"{company} — Achieve a better sale with OffDeal"
 
     prospect_json = json.dumps(prospect, ensure_ascii=False)
+    prospect_json = json.dumps(prospect, ensure_ascii=False)
     prompt = f"""
 You are an expert in SMB M&A (small/medium businesses with $5M-$100M revenue) and a pitch deck copywriter for OffDeal, an AI-native investment bank revolutionizing SMB exits.
 
